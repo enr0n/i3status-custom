@@ -50,10 +50,14 @@ func (i *Info) Connected() bool {
 	return i.upIKE && i.upChild
 }
 
+// Connecting returns true if one, but not both of, the IKE and Child SAs are
+// up.
 func (i *Info) Connecting() bool {
 	return i.upIKE != i.upChild
 }
 
+// Enabled returns true if the module is enabled, i.e. it is able to
+// communicate with a charon daemon.
 func (i *Info) Enabled() bool {
 	return i.valid
 }
