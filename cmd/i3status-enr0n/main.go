@@ -1,4 +1,5 @@
 // Copyright 2018 Google Inc.
+// Copyright 2022 Nick Rosbrook
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +32,10 @@ import (
 	"barista.run/modules/sysinfo"
 	"barista.run/modules/wlan"
 	"barista.run/outputs"
+
 	"github.com/martinlindhe/unit"
+
+	"enr0n.net/x/i3status/strongswan"
 )
 
 func main() {
@@ -62,6 +66,24 @@ func main() {
 			out.Color(colors.Scheme("degraded"))
 		}
 		return out
+	}))
+
+	barista.Add(strongswan.New().Output(func(v strongswan.Info) bar.Output {
+		switch {
+		case v.Error != nil:
+			out := fmt.Sprintf("VPN: err: %v", v.Error)
+			return outputs.Text(out).Color(colors.Scheme("bad"))
+		case v.Connected():
+			out := fmt.Sprintf("VPN: (%s, %s)", v.IKE, v.Child)
+			if v.VirtualIP != "" {
+				out = fmt.Sprintf("%s %s", out, v.VirtualIP)
+			}
+			return outputs.Text(out).Color(colors.Scheme("good"))
+		case v.Enabled():
+			return outputs.Text("VPN: down").Color(colors.Scheme("bad"))
+		default:
+			return outputs.Text("VPN: (unknown error)").Color(colors.Scheme("bad"))
+		}
 	}))
 
 	barista.Add(wlan.Any().Output(func(w wlan.Info) bar.Output {
