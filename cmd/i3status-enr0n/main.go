@@ -17,6 +17,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
@@ -38,7 +39,13 @@ import (
 	"enr0n.net/x/i3status/strongswan"
 )
 
+var (
+	viciSocket = flag.String("vici-socket", "unix:///var/run/charon.vici", "The vici service URI configured for charon")
+)
+
 func main() {
+	flag.Parse()
+
 	colors.LoadFromMap(map[string]string{
 		"good":     "#0f0",
 		"bad":      "#f00",
@@ -68,7 +75,7 @@ func main() {
 		return out
 	}))
 
-	barista.Add(strongswan.New().Output(func(v strongswan.Info) bar.Output {
+	barista.Add(strongswan.NewWithSocket(*viciSocket).Output(func(v strongswan.Info) bar.Output {
 		switch {
 		case v.Error != nil:
 			out := fmt.Sprintf("VPN: err: %v", v.Error)

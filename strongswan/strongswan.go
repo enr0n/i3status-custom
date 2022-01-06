@@ -19,6 +19,7 @@ package strongswan
 import (
 	"context"
 	"errors"
+	"net/url"
 	"time"
 
 	"barista.run/bar"
@@ -61,8 +62,10 @@ func (i *Info) Enabled() bool {
 type Module struct {
 	outputFunc value.Value
 
-	session *vici.Session
-	events  chan vici.Event
+	viciSockNet  string
+	viciSockAddr string
+	session      *vici.Session
+	events       chan vici.Event
 }
 
 // New returns a new default strongswan Module.
@@ -74,6 +77,22 @@ func New() *Module {
 		}
 		return nil
 	})
+	return m
+}
+
+// NewWithSocket returns a new strongswan Module with
+// with a specified vici socket.
+func NewWithSocket(socket string) *Module {
+	m := New()
+
+	u, err := url.Parse(socket)
+	if err != nil {
+		panic(err)
+	}
+
+	m.viciSockNet = u.Scheme
+	m.viciSockAddr = u.Host
+
 	return m
 }
 
@@ -89,12 +108,19 @@ func (m *Module) Stream(sink bar.Sink) {
 	nextOutputFunc, done := m.outputFunc.Subscribe()
 	defer done()
 
-	var info Info
+	var (
+		info Info
+		opt  vici.SessionOption
+	)
+
+	if m.viciSockNet != "" && m.viciSockAddr != "" {
+		opt = vici.WithAddr(m.viciSockNet, m.viciSockAddr)
+	}
 
 	// This loop runs until we have an active vici.Session. If
 	// charon is not running, we will not be able to establish
 	// as session, so run this loop until that happens.
-	m.session, info.Error = vici.NewSession()
+	m.session, info.Error = vici.NewSession(opt)
 	for m.session == nil {
 		sink.Output(outputFunc(info))
 
@@ -103,7 +129,7 @@ func (m *Module) Stream(sink bar.Sink) {
 			outputFunc = m.outputFunc.Get().(func(Info) bar.Output)
 
 		case <-time.After(10 * time.Second):
-			m.session, info.Error = vici.NewSession()
+			m.session, info.Error = vici.NewSession(opt)
 		}
 	}
 	info.valid = true
