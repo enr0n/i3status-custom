@@ -36,7 +36,7 @@ import (
 
 	"github.com/martinlindhe/unit"
 
-	"enr0n.net/x/i3status/strongswan"
+	"enr0n.net/i3status/strongswan"
 )
 
 var (

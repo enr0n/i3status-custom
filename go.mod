@@ -1,4 +1,4 @@
-module enr0n.net/x/i3status
+module enr0n.net/i3status
 
 go 1.16
 
