@@ -156,6 +156,9 @@ func (m *Module) Stream(sink bar.Sink) {
 
 		case ev := <-m.events:
 			info = formatInfoFromEvent(ev)
+			if ev.Message.Get("up") == nil {
+				info = m.currentInfo()
+			}
 		}
 	}
 }
