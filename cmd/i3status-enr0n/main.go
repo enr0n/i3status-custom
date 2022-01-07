@@ -86,6 +86,16 @@ func main() {
 				out = fmt.Sprintf("%s %s", out, v.VirtualIP)
 			}
 			return outputs.Text(out).Color(colors.Scheme("good"))
+		case v.Connecting():
+			sas := ""
+			if v.IKE != "" {
+				sas = fmt.Sprintf("(%s)", v.IKE)
+				if v.Child != "" {
+					sas = fmt.Sprintf("(%s, %s)", v.IKE, v.Child)
+				}
+			}
+			out := fmt.Sprintf("VPN: %s connecting...", sas)
+			return outputs.Text(out).Color(colors.Scheme("degraded"))
 		case v.Enabled():
 			return outputs.Text("VPN: down").Color(colors.Scheme("bad"))
 		default:
