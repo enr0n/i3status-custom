@@ -116,18 +116,18 @@ func (m *Module) Stream(sink bar.Sink) {
 
 	var (
 		info Info
-		opt  vici.SessionOption
+		opts []vici.SessionOption
 	)
 
 	info.invalid = true
 	if m.viciSockNet != "" && m.viciSockAddr != "" {
-		opt = vici.WithAddr(m.viciSockNet, m.viciSockAddr)
+		opts = []vici.SessionOption{vici.WithAddr(m.viciSockNet, m.viciSockAddr)}
 	}
 
 	// This loop runs until we have an active vici.Session. If
 	// charon is not running, we will not be able to establish
 	// as session, so run this loop until that happens.
-	m.session, info.Error = vici.NewSession(opt)
+	m.session, info.Error = vici.NewSession(opts...)
 	for m.session == nil {
 		sink.Output(outputFunc(info))
 
@@ -136,7 +136,7 @@ func (m *Module) Stream(sink bar.Sink) {
 			outputFunc = m.outputFunc.Get().(func(Info) bar.Output)
 
 		case <-time.After(10 * time.Second):
-			m.session, info.Error = vici.NewSession(opt)
+			m.session, info.Error = vici.NewSession(opts...)
 		}
 	}
 	info.invalid = false
