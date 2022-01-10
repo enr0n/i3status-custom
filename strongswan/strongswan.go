@@ -42,7 +42,9 @@ type Info struct {
 	upIKE   bool
 	upChild bool
 
-	valid bool
+	// Indicates that the rest of the information is not necessarily
+	// accurate, because we cannot communicate with charon.
+	invalid bool
 }
 
 // Connected returns true if the IKE and Child SAs are UP.
@@ -59,7 +61,7 @@ func (i *Info) Connecting() bool {
 // Enabled returns true if the module is enabled, i.e. it is able to
 // communicate with a charon daemon.
 func (i *Info) Enabled() bool {
-	return i.valid
+	return !i.invalid
 }
 
 // Module implements bar.Module.
@@ -117,6 +119,7 @@ func (m *Module) Stream(sink bar.Sink) {
 		opt  vici.SessionOption
 	)
 
+	info.invalid = true
 	if m.viciSockNet != "" && m.viciSockAddr != "" {
 		opt = vici.WithAddr(m.viciSockNet, m.viciSockAddr)
 	}
@@ -136,7 +139,7 @@ func (m *Module) Stream(sink bar.Sink) {
 			m.session, info.Error = vici.NewSession(opt)
 		}
 	}
-	info.valid = true
+	info.invalid = false
 
 	err := m.subscribe()
 	if err != nil {
@@ -253,8 +256,7 @@ func (m *Module) subscribe() error {
 }
 
 func formatInfoFromSAs(sas []ikeSA) Info {
-	info := Info{valid: true}
-
+	var info Info
 	// Just choose the first IKE SA. We can add more complex
 	// logic later if necessary.
 	if len(sas) == 0 {
@@ -288,8 +290,7 @@ func formatInfoFromSAs(sas []ikeSA) Info {
 }
 
 func (m *Module) currentInfo() Info {
-	info := Info{valid: true}
-
+	var info Info
 	sas, err := m.listsas()
 	if err != nil {
 		info.Error = err
@@ -300,7 +301,7 @@ func (m *Module) currentInfo() Info {
 }
 
 func formatInfoFromEvent(ev vici.Event) Info {
-	info := Info{valid: true}
+	var info Info
 	m := ev.Message
 
 	if len(m.Keys()) == 0 {
