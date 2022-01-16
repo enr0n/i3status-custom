@@ -17,7 +17,6 @@
 package strongswan
 
 import (
-	"context"
 	"errors"
 	"net/url"
 	"time"
@@ -176,6 +175,8 @@ func (m *Module) Close() error {
 		return err
 	}
 
+	m.session.StopEvents(m.events)
+
 	err = m.session.Close()
 	if err != nil {
 		return err
@@ -237,20 +238,7 @@ func (m *Module) subscribe() error {
 	}
 
 	m.events = make(chan vici.Event, 16)
-
-	go func() {
-		for {
-			ev, err := m.session.NextEvent(context.Background())
-			if err != nil {
-				return
-			}
-
-			switch ev.Name {
-			case "ike-updown", "child-updown":
-				m.events <- ev
-			}
-		}
-	}()
+	m.session.NotifyEvents(m.events)
 
 	return nil
 }
